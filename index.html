@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blueene | Autonomous Fire Suppression & AR-Tube Technology</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        :root { --blueene-primary: #3b82f6; --blueene-dark: #020617; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--blueene-dark); color: #f8fafc; overflow-x: hidden; cursor: none; }
+        
+        /* 🔥 FIRE & SMOKE CURSOR 🔥 */
+        #cursor-dot { width: 6px; height: 6px; background: #ff4d00; position: fixed; border-radius: 50%; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px #ffae00, 0 0 30px #ff4d00; }
+        .fire-particle { position: fixed; width: 4px; height: 4px; background: #ffae00; border-radius: 50%; pointer-events: none; z-index: 9999; animation: fire-fade 0.6s ease-out forwards; }
+        @keyframes fire-fade { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3) translateY(-20px); opacity: 0; } }
+        .smoke-particle { position: fixed; background: rgba(255, 255, 255, 0.8); border-radius: 50%; pointer-events: none; z-index: 10001; animation: smoke-boom 1s ease-out forwards; }
+        @keyframes smoke-boom { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(15) translate(var(--tx), var(--ty)); opacity: 0; filter: blur(10px); } }
+        
+        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.03); transition: all 0.4s ease; }
+        .gradient-text { background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        html { scroll-behavior: smooth; }
+        .industry-btn { border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .industry-btn.active { border-color: var(--blueene-primary); background: rgba(59, 130, 246, 0.1); color: var(--blueene-primary); box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+        .highlight-row { background: rgba(59, 130, 246, 0.15) !important; border-left: 4px solid var(--blueene-primary) !important; }
+
+        input[type=range] { -webkit-appearance: none; background: #ffffff; height: 4px; border-radius: 2px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%; background: #6b7280; border: 3px solid #ffffff; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+    <div id="cursor-dot"></div>
+
+    <nav class="fixed w-full z-[100] px-8 py-6 flex justify-between items-center backdrop-blur-md border-b border-white/5">
+        <div class="text-2xl font-extrabold tracking-tighter uppercase">BLUE<span class="text-blue-500">ENE</span></div>
+        <div class="hidden md:flex space-x-10 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            <a href="#science" class="hover:text-blue-400 transition">Science</a>
+            <a href="#physics" class="hover:text-blue-400 transition">Physics</a>
+            <a href="#install-guide" class="hover:text-blue-400 transition">Installation</a>
+            <a href="#pricing" class="hover:text-blue-400 transition">Pricing</a>
+            <a href="#msds" class="hover:text-blue-400 transition">MSDS</a>
+            <a href="#contact" class="hover:text-blue-400 transition">Contact</a>
+        </div>
+    </nav>
+
+    <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden py-24">
+        <div id="hero-bg" class="absolute inset-0 z-0 bg-cover bg-center transition-all duration-1000 scale-105" style="background-image: url('https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=1600');"></div>
+        <div class="absolute inset-0 z-10 bg-slate-950/80"></div>
+        
+        <div class="relative z-20 text-center px-6 max-w-6xl w-full">
+            <div class="flex justify-center flex-wrap gap-4 mb-8">
+                <button onclick="updateIndustry('vehicle')" id="btn-vehicle" class="industry-btn active px-6 py-2 rounded-full text-[9px] font-bold tracking-widest uppercase">Vehicle</button>
+                <button onclick="updateIndustry('datacenter')" id="btn-datacenter" class="industry-btn px-6 py-2 rounded-full text-[9px] font-bold tracking-widest uppercase">Data Center</button>
+                <button onclick="updateIndustry('electrical')" id="btn-electrical" class="industry-btn px-6 py-2 rounded-full text-[9px] font-bold tracking-widest uppercase">Electrical</button>
+                <button onclick="updateIndustry('laboratory')" id="btn-laboratory" class="industry-btn px-6 py-2 rounded-full text-[9px] font-bold tracking-widest uppercase">Laboratory</button>
+            </div>
+            
+            <h1 id="hero-title" class="text-5xl md:text-8xl font-black mb-8 uppercase tracking-tighter italic">VEHICLE <span class="gradient-text">SUPPRESSION</span></h1>
+            
+            <div class="max-w-5xl mx-auto glass-card rounded-[40px] overflow-hidden p-2 grid md:grid-cols-2 items-center gap-12 text-left mb-10">
+                <div class="p-4">
+                    <img id="segment-clear-img" src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=800" alt="Segment View" class="rounded-[30px] w-full h-80 object-cover shadow-2xl">
+                </div>
+                <div class="pr-12 pb-6 md:pb-0">
+                    <h3 id="segment-label" class="text-blue-500 font-black uppercase text-xs tracking-widest mb-4">Automotive Thermal Management</h3>
+                    <p id="segment-info" class="text-gray-400 text-sm leading-relaxed mb-6 italic">Precision suppression for manifolds and fuel lines. Calibrated to 120°C trigger protocols.</p>
+                    <div id="segment-bullets" class="space-y-3 text-[10px] font-black uppercase tracking-widest text-gray-200">
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-blue-500 mt-0.5"></i> <span>Calibrated 120°C Trigger Point</span></div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-blue-500 mt-0.5"></i> <span>Non-Corrosive Clean Agent</span></div>
+                        <div class="flex items-start gap-2"><i class="fas fa-check text-blue-500 mt-0.5"></i> <span>Manifold & Fuel Line Focus</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-2xl mx-auto glass-card rounded-[40px] p-10 mb-12 border-white/5">
+                <div class="flex justify-between items-center mb-8">
+                    <span class="text-blue-500 font-black uppercase text-[10px] tracking-widest">SYSTEM MONITOR</span>
+                    <span id="sim-status" class="px-5 py-1.5 bg-green-500/10 text-green-400 rounded-full text-[9px] font-black border border-green-500/20">Armed</span>
+                </div>
+                <input type="range" id="temp-slider" min="20" max="150" value="25" class="w-full mb-10" oninput="runSimulation(this.value)">
+                <div class="grid grid-cols-2 gap-10">
+                    <div class="text-left border-r border-white/5">
+                        <div id="sim-temp-display" class="text-5xl font-black italic tracking-tighter">25°C</div>
+                    </div>
+                    <div class="text-right">
+                        <div id="sim-polymer-state" class="text-xl font-black text-blue-400 uppercase italic">Solid</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="demo" class="py-32 px-6 bg-slate-900/40 border-y border-white/5 text-center">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-4xl font-black uppercase tracking-tighter italic mb-12">LIVE ACTION <span class="text-blue-500">DEMONSTRATION</span></h2>
+            <div class="glass-card p-4 rounded-[40px] border-blue-500/20 shadow-2xl overflow-hidden aspect-video">
+                <iframe class="w-full h-full rounded-[30px]" 
+                        src="https://www.youtube.com/embed/0AMVsvYbOS0?autoplay=0&mute=1&loop=1&rel=0" 
+                        title="Blueene AR-Tube Demo" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+    </section>
+
+    <section id="science" class="py-32 px-6 bg-slate-950">
+        <div class="max-w-7xl mx-auto text-center mb-24 uppercase font-black">
+            <h2 class="text-5xl font-black tracking-tighter">THE SCIENCE OF <span class="text-blue-500">AR-TUBES</span></h2>
+        </div>
+        <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-20 items-center">
+            <div class="space-y-16 text-left">
+                <div class="flex gap-10">
+                    <div class="text-5xl font-black text-blue-600/20">01</div>
+                    <div>
+                        <h3 class="text-2xl font-black mb-3 uppercase tracking-tight">Polymer Sensing Tube</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed">Specialized polymer sensor tube designed with micro-thickness variance to act as a linear heat detector.</p>
+                    </div>
+                </div>
+                <div class="flex gap-10">
+                    <div class="text-5xl font-black text-blue-600/20">02</div>
+                    <div>
+                        <h3 class="text-2xl font-black mb-3 uppercase tracking-tight">Thermal Activation</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed">Fire triggers the tube precisely at the source ($80^{\circ}C$ - $120^{\circ}C$), creating an instant localized nozzle.</p>
+                    </div>
+                </div>
+                <div class="flex gap-10">
+                    <div class="text-5xl font-black text-blue-600/20">03</div>
+                    <div>
+                        <h3 class="text-2xl font-black mb-3 uppercase tracking-tight">Automatic Suppression</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed">Agent deploys within seconds. Liquid converts to gas, absorbing thermal energy and extinguishing fire without residue.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-card p-12 rounded-[40px] border-white/5 text-left">
+                <h3 class="text-3xl font-black uppercase tracking-tighter mb-8"><i class="fas fa-microchip text-blue-500 mr-4"></i>Non-Conductive</h3>
+                <p class="text-gray-400 italic text-base mb-12 leading-relaxed">"The agent does not damage electrical boards and is not a conductor of electricity. Safe for all high-tech environments".</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="physics" class="py-32 px-6 bg-slate-900/30 border-y border-white/5">
+        <div class="max-w-6xl mx-auto text-center">
+            <h2 class="text-5xl font-black mb-20 uppercase tracking-tighter italic">THE PHYSICS OF <span class="text-blue-500">SAFETY</span></h2>
+            <div class="grid md:grid-cols-3 gap-10 text-left">
+                <div class="glass-card p-10 rounded-3xl">
+                    <h4 class="text-blue-400 font-bold mb-5 uppercase text-[10px] tracking-widest">01 — Detection</h4>
+                    <p class="text-gray-500 text-xs leading-relaxed">Linear sensing via multi-layer polymer tube pressurized at 20 Bar.</p>
+                </div>
+                <div class="glass-card p-10 rounded-3xl">
+                    <h4 class="text-blue-400 font-bold mb-5 uppercase text-[10px] tracking-widest">02 — Degradation</h4>
+                    <p class="text-gray-500 text-xs leading-relaxed">Polymer glass transition creates a localized rupture nozzle precisely at heat source.</p>
+                </div>
+                <div class="glass-card p-10 rounded-3xl">
+                    <h4 class="text-blue-400 font-bold mb-5 uppercase text-[10px] tracking-widest">03 — Thermodynamics</h4>
+                    <p class="text-gray-500 text-xs leading-relaxed">Liquid-to-gas endothermic phase change floods the fire triangle.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-32 px-6 bg-slate-950">
+        <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-20 items-center">
+            <div class="glass-card p-4 rounded-[40px] border-blue-500/20 shadow-2xl relative">
+                <model-viewer src="assets/models/ar-tube-inline.glb" auto-rotate camera-controls style="width: 100%; height: 500px;"></model-viewer>
+                <div class="absolute bottom-8 left-8 text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 bg-black/60 px-4 py-2 rounded">Interactive 3D Blueprint</div>
+            </div>
+            <div class="text-left">
+                <h2 class="text-5xl font-black uppercase tracking-tighter italic mb-8">THE <span class="text-blue-500">INLINE</span> BLUEPRINT</h2>
+                <p class="text-gray-400 leading-relaxed mb-10 text-base">The steel pressure meter is precision-engineered to be the <strong>exact same diameter</strong> as the polymer tube (1:1 ratio).</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="install-guide" class="py-32 px-6 bg-slate-900/30 border-t border-white/5">
+        <div class="max-w-7xl mx-auto text-center mb-20 uppercase tracking-tighter italic"><h2 class="text-5xl font-black">INSTALLATION <span class="text-blue-500">PROTOCOL</span></h2></div>
+        <div class="max-w-7xl mx-auto grid md:grid-cols-3 gap-10 text-left">
+            <div class="glass-card p-12 rounded-[40px] border-white/5">
+                <h4 class="text-blue-500 font-black mb-8 uppercase text-xs tracking-widest">PHASE 01: ANALYZE</h4>
+                <ul class="space-y-6 text-sm text-gray-400 font-medium leading-relaxed">
+                    <li>1. Risk ID: Map potential ignition sources.</li>
+                    <li>2. Volume: Calculate enclosure dimensions.</li>
+                    <li>3. Heat Zones: Identify hazard centers.</li>
+                </ul>
+            </div>
+            <div class="glass-card p-12 rounded-[40px] border-blue-500/20">
+                <h4 class="text-blue-500 font-black mb-8 uppercase text-xs tracking-widest">PHASE 02: MOUNT</h4>
+                <ul class="space-y-6 text-sm text-gray-400 font-medium leading-relaxed">
+                    <li>4. Routing: Install 15-20cm above source.</li>
+                    <li>5. Secure: Use ties every 20-30cm (do not pinch).</li>
+                    <li>6. Seal Caps: Mount caps using steel brackets.</li>
+                </ul>
+            </div>
+            <div class="glass-card p-12 rounded-[40px] border-white/5">
+                <h4 class="text-blue-500 font-black mb-8 uppercase text-xs tracking-widest">PHASE 03: ACTIVATE</h4>
+                <ul class="space-y-6 text-sm text-gray-400 font-medium leading-relaxed">
+                    <li>7. Sensors: Connect optional switches.</li>
+                    <li>8. Monitor: Gauge must be in Green (20 Bar).</li>
+                    <li>9. Inspection: Weekly verification of visibility.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="py-32 px-6 bg-slate-950 border-t border-white/5">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-5xl font-black text-center mb-16 uppercase italic text-blue-500">Configuration Matrix</h2>
+            <div class="max-w-3xl mx-auto glass-card p-12 rounded-[40px] border-blue-500/20 text-center mb-24">
+                <div class="grid grid-cols-3 gap-6 mb-12">
+                    <input type="number" id="calc-l" oninput="calculateVolume()" placeholder="L (cm)" class="bg-slate-900 p-5 rounded-2xl border border-white/5 text-white outline-none focus:border-blue-500 transition">
+                    <input type="number" id="calc-w" oninput="calculateVolume()" placeholder="W (cm)" class="bg-slate-900 p-5 rounded-2xl border border-white/5 text-white outline-none focus:border-blue-500 transition">
+                    <input type="number" id="calc-h" oninput="calculateVolume()" placeholder="H (cm)" class="bg-slate-900 p-5 rounded-2xl border border-white/5 text-white outline-none focus:border-blue-500 transition">
+                </div>
+                <div id="result-volume" class="text-6xl font-black text-blue-500 tracking-tighter mb-4">0.00 m³</div>
+                <div id="calc-recommendation" class="text-sm font-bold uppercase text-gray-400 tracking-widest"></div>
+            </div>
+            <div class="glass-card rounded-[40px] overflow-hidden border-white/5">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-white/5 text-gray-400 uppercase text-[10px] font-black tracking-widest"><tr><th class="p-8">Tube Length</th><th class="p-8">Gas (kg)</th><th class="p-8">Max Coverage</th><th class="p-8 text-right">Unit Price</th></tr></thead>
+                    <tbody id="price-rows" class="font-bold text-gray-300"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-32 px-6 bg-slate-950 border-t border-white/5">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-16 uppercase italic">
+                <h2 class="text-5xl font-black tracking-tighter">REQUEST FOR <span class="text-blue-500">QUOTE</span></h2>
+            </div>
+            <div class="glass-card p-12 rounded-[40px] border-white/5 relative">
+                <form id="blueene-rfq" class="space-y-8 text-left">
+                    <div class="grid md:grid-cols-2 gap-8 text-[10px] font-black uppercase tracking-widest">
+                        <div class="space-y-2"><label class="text-gray-500 ml-2">Full Name</label><input type="text" name="user_name" required placeholder="Name" class="w-full bg-slate-900/50 p-5 rounded-2xl border border-white/5 text-white outline-none focus:border-blue-500 transition"></div>
+                        <div class="space-y-2"><label class="text-gray-500 ml-2">Official Email</label><input type="email" name="user_email" required placeholder="Email" class="w-full bg-slate-900/50 p-5 rounded-2xl border border-white/5 text-white outline-none focus:border-blue-500 transition"></div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-8 text-[10px] font-black uppercase tracking-widest">
+                        <div class="space-y-2"><label class="text-gray-500 ml-2">Direct Contact</label><input type="tel" name="user_phone" required placeholder="Phone" class="w-full bg-slate-900/50 p-5 rounded-2xl border border-white/5 text-white outline-none focus:border-blue-500 transition"></div>
+                        <div class="space-y-2"><label class="text-gray-500 ml-2">Segment</label><select name="segment" class="w-full bg-slate-900/50 p-5 rounded-2xl border border-white/5 text-white outline-none appearance-none"><option value="Vehicle">Vehicle</option><option value="Data Center">Data Center</option><option value="Electrical">Electrical</option><option value="Laboratory">Laboratory</option></select></div>
+                    </div>
+                    <div class="space-y-2 text-[10px] font-black uppercase tracking-widest"><label class="text-gray-500 ml-2">Requirement</label><textarea name="requirement" rows="4" required placeholder="Details..." class="w-full bg-slate-900/50 p-5 rounded-2xl border border-white/5 text-white outline-none focus:border-blue-500 transition resize-none"></textarea></div>
+                    <button type="submit" id="rfq-submit-btn" class="w-full py-6 bg-blue-600 rounded-2xl font-black uppercase tracking-[0.3em] hover:bg-blue-500 transition shadow-2xl">Send RFQ & Initialize Protocol</button>
+                </form>
+                <div id="form-success" class="hidden absolute inset-0 bg-slate-950/90 flex items-center justify-center rounded-[40px] text-center p-12">
+                    <div><i class="fas fa-check-circle text-blue-500 text-6xl mb-6"></i><h3 class="text-2xl font-black uppercase mb-2">Protocol Initialized</h3><p class="text-gray-400 text-sm italic">Blueene HQ will contact you shortly.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="msds" class="py-32 px-6 bg-slate-900/30 border-t border-white/5">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-5xl font-black mb-16 uppercase tracking-tighter italic">MATERIAL SAFETY <span class="text-blue-500">DATA SHEET</span></h2>
+            <div class="glass-card p-16 rounded-[40px] border-white/5 text-left text-sm leading-relaxed">
+                <h3 class="text-4xl font-black text-white mb-2 uppercase tracking-tighter">HFC-227EA</h3>
+                <div class="space-y-10">
+                    <div><h4 class="text-blue-500 font-black uppercase mb-3 tracking-widest text-[11px]">SECTION 1: PRODUCT</h4><p class="text-gray-400">Name: Heptafluoropropane | Trade: Blueene Clean Agent.</p></div>
+                    <div><h4 class="text-blue-500 font-black uppercase mb-3 tracking-widest text-[11px]">SECTION 2: HAZARDS</h4><p class="text-gray-400">Non-flammable gas. Pressure risk. Frostbite risk.</p></div>
+                    <div><h4 class="text-blue-500 font-black uppercase mb-3 tracking-widest text-[11px]">SECTION 3: FIRST AID</h4><p class="text-gray-400">Inhalation: Move to fresh air. Skin: Wash with warm water.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-24 px-8 bg-slate-950 border-t border-white/5 text-xs text-gray-500 font-medium text-left">
+        <div class="max-w-7xl mx-auto grid md:grid-cols-4 gap-20">
+            <div class="col-span-2">
+                <div class="text-4xl font-black mb-8 uppercase text-white tracking-tighter">BLUE<span class="text-blue-500">ENE</span></div>
+                <div class="flex gap-8 text-2xl text-white">
+                    <a href="https://www.instagram.com/the.blueene/" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.facebook.com/theblueene" target="_blank"><i class="fab fa-facebook"></i></a>
+                    <a href="https://www.linkedin.com/company/blueene/" target="_blank"><i class="fab fa-linkedin"></i></a>
+                    <a href="https://www.youtube.com/@TheBlueEne" target="_blank"><i class="fab fa-youtube"></i></a>
+                    <a href="https://telegram.me/theblueene" target="_blank"><i class="fab fa-telegram"></i></a>
+                </div>
+            </div>
+            <div><h4 class="font-black mb-8 uppercase text-blue-500 tracking-[0.2em]">HQ REACH</h4><ul class="space-y-6 text-sm"><li><a href="tel:+919590007244" class="hover:text-white transition">9590007244</a></li><li><a href="mailto:hello@blueene.com" class="hover:text-white transition">hello@blueene.com</a></li></ul></div>
+            <div><h4 class="font-black mb-8 uppercase text-blue-500 tracking-[0.2em]">SUPPORT</h4><ul class="space-y-6 text-sm"><li>Installation Guide</li><li>MSDS Datasheet</li></ul></div>
+        </div>
+    </footer>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        // RFQ LOGIC WITH YOUR IDs
+        (function() { emailjs.init("RrsVlYy10nL2H9_7-"); })();
+        document.getElementById('blueene-rfq').addEventListener('submit', function(e) { 
+            e.preventDefault(); 
+            const btn = document.getElementById('rfq-submit-btn'); 
+            const success = document.getElementById('form-success'); 
+            btn.innerText = "TRANSMITTING..."; 
+            emailjs.sendForm('service_sm438ds', 'template_ts8tv68', this).then(() => success.classList.remove('hidden'), (err) => alert("Submission failed.")); 
+        });
+
+        // SIMULATION & INDUSTRY LOGIC
+        const industries = {
+            vehicle: { title: "VEHICLE <span class='gradient-text'>SUPPRESSION</span>", label: "Automotive Thermal Management", info: "Risk: high-velocity air-cooling in engine bays. CALIBRATED: 120°C protocols.", bullets: ["Trigger: 120°C flash fire detection", "Deployment: Linear coverage along manifolds", "Asset: Non-corrosive HFC-227ea"], bg: "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=1600", clear: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=800" },
+            datacenter: { title: "SERVER <span class='gradient-text'>SECURITY</span>", label: "In-Rack IT Protection", info: "Residue-free suppression for mission-critical hardware.", bullets: ["Zero Conductivity", "No Residue Cleanup", "At-Source Deployment"], bg: "https://images.unsplash.com/photo-1558494949-ef010cbdcc48?auto=format&fit=crop&q=80&w=1600", clear: "https://images.unsplash.com/photo-1551703599-6b3e8379aa8b?auto=format&fit=crop&q=80&w=800" },
+            electrical: { title: "CABINET <span class='gradient-text'>DEFENSE</span>", label: "Switchgear Safety", info: "Linear sensing for voltage panels.", bullets: ["Arc-Safe Gas", "Linear 20 Bar Sensing", "Rapid Reaction"], bg: "https://images.unsplash.com/photo-1551703599-6b3e8379aa8b?auto=format&fit=crop&q=80&w=1600", clear: "https://images.unsplash.com/photo-1558494949-ef010cbdcc48?auto=format&fit=crop&q=80&w=800" },
+            laboratory: { title: "LAB <span class='gradient-text'>PROTECTION</span>", label: "Fume Hood Safety", info: "Non-toxic suppression for optics and samples.", bullets: ["Human Space Safe", "Optic Security", "Chemically Inert"], bg: "https://images.unsplash.com/photo-1579154273821-ad99159ad503?auto=format&fit=crop&q=80&w=1600", clear: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&q=80&w=800" }
+        };
+
+        function updateIndustry(key) {
+            const d = industries[key];
+            document.getElementById('hero-bg').style.backgroundImage = `url('${d.bg}')`;
+            document.getElementById('segment-clear-img').src = d.clear;
+            document.getElementById('hero-title').innerHTML = d.title;
+            document.getElementById('segment-info').innerText = d.info;
+            document.getElementById('segment-label').innerText = d.label;
+            document.getElementById('segment-bullets').innerHTML = d.bullets.map(b => `<div class="flex items-start gap-2"><i class="fas fa-check text-blue-500 mt-0.5"></i> <span>${b}</span></div>`).join('');
+            document.querySelectorAll('.industry-btn').forEach(btn => btn.classList.toggle('active', btn.id === 'btn-'+key));
+        }
+
+        function runSimulation(v) {
+            document.getElementById('sim-temp-display').innerText = v + "°C";
+            const s = document.getElementById('sim-status'), p = document.getElementById('sim-polymer-state');
+            if(v < 80) { s.innerText = "Armed"; p.innerText = "Solid"; s.className="px-5 py-1.5 bg-green-500/10 text-green-400 rounded-full text-[9px] font-black border border-green-500/20"; }
+            else if(v < 120) { s.innerText = "Thermal Alert"; p.innerText = "Transition"; s.className="px-5 py-1.5 bg-orange-500/10 text-orange-400 rounded-full text-[9px] font-black border border-orange-500/20"; }
+            else { s.innerText = "Suppression Active"; p.innerText = "Rupture"; s.className="px-5 py-1.5 bg-red-500/10 text-red-400 rounded-full text-[9px] font-black border border-red-500/20 animate-pulse"; }
+        }
+
+        const prices = [{ len: "0.28m", gas: 0.05, maxV: 0.10, val: 9558 },{ len: "0.53m", gas: 0.12, maxV: 0.21, val: 12272 },{ len: "1.10m", gas: 0.25, maxV: 0.45, val: 21830 },{ len: "2.12m", gas: 0.50, maxV: 0.90, val: 26550 },{ len: "3.16m", gas: 0.75, maxV: 1.35, val: 32745 },{ len: "4.19m", gas: 1.00, maxV: 1.80, val: 40710 },{ len: "5.23m", gas: 1.25, maxV: 2.25, val: 46315 },{ len: "6.30m", gas: 1.50, maxV: 2.70, val: 53690 }];
+        function calculateVolume() {
+            const v = (document.getElementById('calc-l').value * document.getElementById('calc-w').value * document.getElementById('calc-h').value) / 1000000;
+            document.getElementById('result-volume').innerText = v.toFixed(3) + " m³";
+            renderTable(prices.find(p => p.maxV >= v)?.len);
+        }
+        function renderTable(h = null) {
+            document.getElementById('price-rows').innerHTML = prices.map(p => `<tr class="${p.len === h ? 'highlight-row' : ''} border-t border-white/5 transition"><td class="p-8 text-white">${p.len}</td><td class="p-8">${p.gas}kg</td><td class="p-8">${p.maxV.toFixed(2)} m³</td><td class="p-8 text-right font-black text-blue-500">₹${p.val.toLocaleString()}</td></tr>`).join('');
+        }
+        
+        const dot = document.getElementById('cursor-dot'); window.addEventListener('mousemove', (e) => { dot.style.left = `${e.clientX}px`; dot.style.top = `${e.clientY}px`; const p = document.createElement('div'); p.className = 'fire-particle'; p.style.left = `${e.clientX}px`; p.style.top = `${e.clientY}px`; document.body.appendChild(p); setTimeout(() => p.remove(), 600); }); window.addEventListener('mousedown', (e) => { for(let i=0; i<25; i++){ const s = document.createElement('div'); s.className = 'smoke-particle'; s.style.width = s.style.height = `${Math.random()*50+15}px`; s.style.left = `${e.clientX}px`; s.style.top = `${e.clientY}px`; s.style.setProperty('--tx', `${(Math.random()-0.5)*400}px`); s.style.setProperty('--ty', `${(Math.random()-0.5)*400}px`); document.body.appendChild(s); setTimeout(() => s.remove(), 1000); } });
+        renderTable();
+    </script>
+</body>
+</html>
